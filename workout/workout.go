@@ -1,14 +1,18 @@
 package workout
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // Workout model
 type Workout struct {
-	ID        uint
-	Name      string
-	Exercises []uint
-	CreatedAt time.Time
-	Date      time.Time
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	Exercises []uint    `json:"exercises"`
+	CreatedAt time.Time `json:"created_at"`
+	Date      time.Time `json:"date"`
 }
 
 func NewWorkout(name string, exercises []uint) (*Workout, error) {

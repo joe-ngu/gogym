@@ -3,18 +3,19 @@ package user
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // User model
 type User struct {
-	ID                uint
-	FirstName         string
-	LastName          string
-	UserName          string
-	EncryptedPassword string
-	CreatedAt         time.Time
-	Workouts          []uint
+	ID                uuid.UUID `json:"id"`
+	FirstName         string    `json:"first_name"`
+	LastName          string    `json:"last_name"`
+	UserName          string    `json:"user_name"`
+	EncryptedPassword string    `json:"encrypted_password"`
+	CreatedAt         time.Time `json:"created_at"`
+	Workouts          []uint    `json:"workouts"`
 }
 
 func (u *User) ValidPassword(pw string) bool {
@@ -51,5 +52,3 @@ type CreateAccountRequest struct {
 	LastName  string `json:"lastName"`
 	Password  string `json:"password"`
 }
-
-

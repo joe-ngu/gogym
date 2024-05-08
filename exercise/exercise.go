@@ -2,6 +2,8 @@ package exercise
 
 import (
 	"errors"
+
+	"github.com/google/uuid"
 )
 
 // A muscle group enum using a struct for safer representation
@@ -56,7 +58,7 @@ func GetMuscleGroup(s string) (MuscleGroup, error) {
 
 // Exercise model
 type Exercise struct {
-	ID          uint        `json:"id"`
+	ID          uuid.UUID   `json:"id"`
 	Name        string      `json:"name"`
 	MuscleGroup MuscleGroup `json:"muscle_group"`
 }
