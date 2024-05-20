@@ -1,4 +1,4 @@
-package exercise
+package types
 
 import (
 	"errors"
@@ -58,14 +58,25 @@ func GetMuscleGroup(s string) (MuscleGroup, error) {
 
 // Exercise model
 type Exercise struct {
-	ID          uuid.UUID   `json:"id"`
 	Name        string      `json:"name"`
 	MuscleGroup MuscleGroup `json:"muscle_group"`
 }
 
-func NewExercise(name string, muscleGroup MuscleGroup) (*Exercise, error) {
+func NewExercise(name string, muscle string) (*Exercise, error) {
+  muscleGroup, err := GetMuscleGroup(muscle)
+  if err != nil {
+    return nil, err
+  }
+
 	return &Exercise{
 		Name:        name,
 		MuscleGroup: muscleGroup,
 	}, nil
 }
+
+type CreateExerciseRequest struct {
+  Name string
+  MuscleGroup MuscleGroup
+}
+
+

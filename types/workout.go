@@ -1,4 +1,4 @@
-package workout
+package types
 
 import (
 	"time"
@@ -9,14 +9,16 @@ import (
 // Workout model
 type Workout struct {
 	ID        uuid.UUID `json:"id"`
+	UserID    uuid.UUID `json:"user_id"`
 	Name      string    `json:"name"`
-	Exercises []uint    `json:"exercises"`
+	Exercises []string    `json:"exercises"`
 	CreatedAt time.Time `json:"created_at"`
-	Date      time.Time `json:"date"`
 }
 
-func NewWorkout(name string, exercises []uint) (*Workout, error) {
+func NewWorkout(userID uuid.UUID, name string, exercises []string) (*Workout, error) {
 	return &Workout{
+    ID: uuid.New(),
+    UserID: userID,
 		Name:      name,
 		Exercises: exercises,
 		CreatedAt: time.Now().UTC(),
