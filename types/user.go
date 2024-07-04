@@ -37,18 +37,14 @@ func NewUser(firstName string, lastName string, userName string, password string
 	}, nil
 }
 
-type LoginResponse struct {
-	UserName string `json:"user_name"`
-	Token    string `json:"token"`
-}
-
-type LoginRequest struct {
-	UserName string `json:"user_name"`
-	Password string `json:"password"`
-}
-
-type CreateAccountRequest struct {
+type UserPayload struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
+	UserName  string `json:"user_name"`
 	Password  string `json:"password"`
+}
+
+func (p *UserPayload) Validate() map[string]string {
+	errs := make(map[string]string)
+	return errs
 }

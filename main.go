@@ -1,11 +1,25 @@
 package main
 
 import (
-	"fmt"
+	"log"
 
+	"github.com/joe-ngu/gogym/store"
+	"github.com/joe-ngu/gogym/utils"
 )
 
 func main() {
-	LoadDotenv()
-	fmt.Println("hello gym")
+	utils.LoadDotenv()
+
+	store, err := store.NewPostgresStore()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("Created new PostgresStore")
+
+	if err := store.Init(); err != nil {
+		log.Fatal(err)
+	}
+
+	server := NewAPIServer(":3000", store)
+	server.Run()
 }

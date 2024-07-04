@@ -5,38 +5,29 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/google/uuid"
-	"github.com/joe-ngu/gogym/storage"
+	"github.com/joe-ngu/gogym/store"
 	"github.com/joe-ngu/gogym/types"
 )
 
-type WorkoutPayload struct {
-	UserID    uuid.UUID `json:"user"`
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"created_at"`
-	Exercises []string  `json:"exercises"`
-}
-
-func (p *WorkoutPayload) validate() map[string]string {
-	errs := make(map[string]string)
-	return errs
-}
-
 type WorkoutHandler struct {
-	db storage.DB
+	db store.DB
+}
+
+func NewWorkoutHandler(db store.DB) *WorkoutHandler {
+	return &WorkoutHandler{db: db}
 }
 
 func (h *WorkoutHandler) Create(w http.ResponseWriter, r *http.Request) error {
 	log.Println("Handling CREATE request - Method:", r.Method)
-	var req WorkoutPayload
+	var req types.WorkoutPayload
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return InvalidJSON()
 	}
 	defer r.Body.Close()
 
-	if errs := req.validate(); len(errs) > 0 {
+	if errs := req.Validate(); len(errs) > 0 {
 		return InvalidRequestData(errs)
 	}
 
@@ -91,14 +82,14 @@ func (h *WorkoutHandler) Update(w http.ResponseWriter, r *http.Request) error {
 		return errors.New("Workout to update does not exist")
 	}
 
-	var req WorkoutPayload
+	var req types.WorkoutPayload
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return InvalidJSON()
 	}
 	defer r.Body.Close()
 
-	if errors := req.validate(); len(errors) > 0 {
-		return InvalidRequestData(errors)
+	if errs := req.Validate(); len(errs) > 0 {
+		return InvalidRequestData(errs)
 	}
 
 	workout, err := types.NewWorkout(req.UserID, req.Name, req.Exercises)
@@ -115,8 +106,7 @@ func (h *WorkoutHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	err = h.db.DeleteWorkout(workoutID)
-	if err != nil {
+	if err := h.db.DeleteWorkout(workoutID); err != nil {
 		return err
 	}
 	return writeJSON(w, http.StatusNoContent, nil)

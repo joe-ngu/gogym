@@ -24,3 +24,15 @@ func NewWorkout(userID uuid.UUID, name string, exercises []string) (*Workout, er
 		CreatedAt: time.Now().UTC(),
 	}, nil
 }
+
+type WorkoutPayload struct {
+	UserID    uuid.UUID `json:"user"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	Exercises []string  `json:"exercises"`
+}
+
+func (p *WorkoutPayload) Validate() map[string]string {
+	errs := make(map[string]string)
+	return errs
+}

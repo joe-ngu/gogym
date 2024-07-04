@@ -5,50 +5,28 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"regexp"
 
-	"github.com/joe-ngu/gogym/storage"
+	"github.com/joe-ngu/gogym/store"
 	"github.com/joe-ngu/gogym/types"
 )
 
-type ExercisePayload struct {
-	Name        string `json:"name"`
-	MuscleGroup string `json:"muscle_group"`
-}
-
-func (p *ExercisePayload) validate() map[string]string {
-	errs := make(map[string]string)
-	alphaRegex := regexp.MustCompile(`^[a-zA-Z]+$`)
-
-	if !alphaRegex.MatchString(p.Name) {
-		errs["Name"] = "name must be a string containing only alphabetical characters"
-	}
-	if len(p.Name) < 2 || 32 < len(p.Name) {
-		errs["Name"] = "name must be between 2 and 32 characters long"
-	}
-	if _, err := types.GetMuscleGroup(p.MuscleGroup); err != nil {
-		errs["MuscleGroup"] = err.Error()
-	}
-	return errs
-}
-
 type ExerciseHandler struct {
-	db storage.DB
+	db store.DB
 }
 
-func NewExerciseHandler(db storage.DB) *ExerciseHandler {
+func NewExerciseHandler(db store.DB) *ExerciseHandler {
 	return &ExerciseHandler{db: db}
 }
 
 func (h *ExerciseHandler) Create(w http.ResponseWriter, r *http.Request) error {
 	log.Println("Handling CREATE request - Method:", r.Method)
-	var req ExercisePayload
+	var req types.ExercisePayload
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return InvalidJSON()
 	}
 	defer r.Body.Close()
 
-	if errs := req.validate(); len(errs) > 0 {
+	if errs := req.Validate(); len(errs) > 0 {
 		return InvalidRequestData(errs)
 	}
 
@@ -91,14 +69,14 @@ func (h *ExerciseHandler) Get(w http.ResponseWriter, r *http.Request) error {
 
 func (h *ExerciseHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	log.Println("Handling UPDATE request - Method:", r.Method)
-	var req ExercisePayload
+	var req types.ExercisePayload
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return InvalidJSON()
 	}
 	defer r.Body.Close()
 
-	if errs := req.validate(); len(errs) > 0 {
+	if errs := req.Validate(); len(errs) > 0 {
 		return InvalidRequestData(errs)
 	}
 
@@ -112,11 +90,12 @@ func (h *ExerciseHandler) Update(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	if err := h.db.UpdateExercise(exercise); err != nil {
+	updated_exercise, err := h.db.UpdateExercise(exercise)
+	if err != nil {
 		return err
 	}
 
-	return writeJSON(w, http.StatusOK, exercise)
+	return writeJSON(w, http.StatusOK, updated_exercise)
 }
 
 func (h *ExerciseHandler) Delete(w http.ResponseWriter, r *http.Request) error {

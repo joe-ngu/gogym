@@ -1,14 +1,22 @@
-.PHONY: build run test
+# Variables
+DOCKER_COMPOSE=docker compose
+DOCKER_COMPOSE_FILE=docker-compose.yml
+IMAGE_NAME=gogym
 
+# Build the Docker image
 build:
-	@echo "Building gogym..."
-	@go build -o bin/gogym
+	docker build -t $(IMAGE_NAME) .
 
-run: build
-	@echo "Running gogym..."
-	@./bin/gogym
+# Bring up the Docker Compose services
+up:
+	$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) up --build
 
-test:
-	@echo "Running tests..."
-	@go test -v ./...
+# Tear down the Docker Compose services
+down:
+	$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) down
 
+# Restart the Docker Compose services
+restart: down up
+
+# Phony targets to avoid conflicts with files of the same name
+.PHONY: build up down restart

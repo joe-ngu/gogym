@@ -34,6 +34,10 @@ func InvalidJSON() APIError {
 	return NewAPIError(http.StatusBadRequest, fmt.Errorf("invalid JSON request data"))
 }
 
+func PermissionDenied() APIError {
+	return NewAPIError(http.StatusForbidden, fmt.Errorf("permission denied"))
+}
+
 type APIFunc func(w http.ResponseWriter, r *http.Request) error
 
 func Make(h APIFunc) http.HandlerFunc {

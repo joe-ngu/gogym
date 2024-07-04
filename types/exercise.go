@@ -2,8 +2,7 @@ package types
 
 import (
 	"errors"
-
-	"github.com/google/uuid"
+	"regexp"
 )
 
 // A muscle group enum using a struct for safer representation
@@ -63,10 +62,10 @@ type Exercise struct {
 }
 
 func NewExercise(name string, muscle string) (*Exercise, error) {
-  muscleGroup, err := GetMuscleGroup(muscle)
-  if err != nil {
-    return nil, err
-  }
+	muscleGroup, err := GetMuscleGroup(muscle)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Exercise{
 		Name:        name,
@@ -74,9 +73,23 @@ func NewExercise(name string, muscle string) (*Exercise, error) {
 	}, nil
 }
 
-type CreateExerciseRequest struct {
-  Name string
-  MuscleGroup MuscleGroup
+type ExercisePayload struct {
+	Name        string `json:"name"`
+	MuscleGroup string `json:"muscle_group"`
 }
 
+func (p *ExercisePayload) Validate() map[string]string {
+	errs := make(map[string]string)
+	alphaRegex := regexp.MustCompile(`^[a-zA-Z]+$`)
 
+	if !alphaRegex.MatchString(p.Name) {
+		errs["Name"] = "name must be a string containing only alphabetical characters"
+	}
+	if len(p.Name) < 2 || 32 < len(p.Name) {
+		errs["Name"] = "name must be between 2 and 32 characters long"
+	}
+	if _, err := GetMuscleGroup(p.MuscleGroup); err != nil {
+		errs["MuscleGroup"] = err.Error()
+	}
+	return errs
+}
