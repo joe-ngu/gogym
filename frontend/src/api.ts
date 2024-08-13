@@ -88,8 +88,8 @@ export const createWorkout = async (workout: any) => {
   return response.json();
 };
 
-export const updateWorkout = async (workout: any) => {
-  const response = await fetch(`${BASE_URL}/workouts/${workout.id}`, {
+export const updateWorkout = async (id: string, workout: any) => {
+  const response = await fetch(`${BASE_URL}/workouts/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -143,8 +143,8 @@ export const createExercise = async (exercise: any) => {
   return response.json();
 };
 
-export const updateExercise = async (exercise: any) => {
-  const response = await fetch(`${BASE_URL}/exercises/${exercise.id}`, {
+export const updateExercise = async (id: string, exercise: any) => {
+  const response = await fetch(`${BASE_URL}/exercises/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
