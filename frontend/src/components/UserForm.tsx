@@ -1,13 +1,15 @@
 import { createUser, updateUser } from "@/api";
+import { AuthToken } from "@/types";
 import { ChangeEvent, FormEvent, useState } from "react";
 
 interface UserFormProps {
+  token: AuthToken;
   userId?: string;
   initialData?: any;
   onSave: () => void;
 }
 
-const UserForm = ({ userId, initialData, onSave }: UserFormProps) => {
+const UserForm = ({ token, userId, initialData, onSave }: UserFormProps) => {
   const [formData, setFormData] = useState(
     initialData || {
       name: "",
@@ -24,7 +26,9 @@ const UserForm = ({ userId, initialData, onSave }: UserFormProps) => {
     e.preventDefault();
 
     try {
-      userId ? await updateUser(userId, formData) : await createUser(formData);
+      userId
+        ? await updateUser(userId, formData)
+        : await createUser(token, formData);
       onSave();
     } catch (error) {
       console.error("Error saving user:", error);

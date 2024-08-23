@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+# Variables
+POSTGRES_USER=chad
+POSTGRES_PASSWORD=Giga
+POSTGRES_DB=gogym
+
+# Create UUID extension
+PGPASSWORD=$POSTGRES_PASSWORD psql -v ON_ERROR_STOP=1 -U $POSTGRES_USER -d $POSTGRES_DB <<-EOSQL
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+EOSQL
+

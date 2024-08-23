@@ -1,23 +1,50 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { AuthProvider, useAuth } from "@/auth/AuthContext";
 
-import Layout from "@/pages/Layout";
+import Navbar from "@/components/Navbar";
+import Signup from "@/pages/Signup";
+import Login from "@/pages/Login";
 import Home from "@/pages/Home";
 import Users from "@/pages/Users";
 import Workouts from "@/pages/Workouts";
 import Exercises from "@/pages/Exercises";
 
+const ProtectedRoute = ({ element }: { element: React.ReactNode }) => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? element : <Navigate to="/login" />;
+};
+
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
-          <Route path="users" element={<Users />} />
-          <Route path="workouts" element={<Workouts />} />
-          <Route path="exercises" element={<Exercises />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <Router>
+      <AuthProvider>
+        <Navbar />
+        <Routes>
+          <Route>
+            <Route path="/" element={<Home />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/users"
+              element={<ProtectedRoute element={<Users />} />}
+            />
+            <Route
+              path="/workouts"
+              element={<ProtectedRoute element={<Workouts />} />}
+            />
+            <Route
+              path="/exercises"
+              element={<ProtectedRoute element={<Exercises />} />}
+            />
+          </Route>
+        </Routes>
+      </AuthProvider>
+    </Router>
   );
 }
 

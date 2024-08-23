@@ -1,5 +1,5 @@
 import { createExercise, updateExercise } from "@/api";
-import { ChangeEvent, useState } from "react";
+import { useState } from "react";
 
 interface ExerciseFormProps {
   exerciseId?: string;
@@ -19,7 +19,7 @@ const ExerciseForm = ({
     }
   );
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
