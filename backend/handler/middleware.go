@@ -14,6 +14,19 @@ import (
 	"github.com/joe-ngu/gogym/store"
 )
 
+type Middleware func(http.Handler) http.Handler
+
+func CreateStack(xs ...Middleware) Middleware {
+	return func(next http.Handler) http.Handler {
+		for i := len(xs) - 1; i >= 0; i-- {
+			x := xs[i]
+			next = x(next)
+		}
+
+		return next
+	}
+}
+
 type contextKey string
 
 const UserIDKey = contextKey("userID")
@@ -52,35 +65,52 @@ func validateJWT(tokenString string) (*Claims, error) {
 	return claims, nil
 }
 
-func JWTAuthMiddleware(h http.HandlerFunc, s store.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			PermissionDenied(w)
-			return
-		}
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+func JWTAuthMiddlewareFactory(s store.DB) Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authHeader := r.Header.Get("Authorization")
+			if authHeader == "" {
+				PermissionDenied(w)
+				return
+			}
+			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
-		claims, err := validateJWT(tokenString)
-		if err != nil {
-			log.Println("invalid token")
-			PermissionDenied(w)
-			return
-		}
+			claims, err := validateJWT(tokenString)
+			if err != nil {
+				log.Println("invalid token")
+				PermissionDenied(w)
+				return
+			}
 
-		user, err := s.GetUserByID(claims.UserID)
-		if err != nil {
-			PermissionDenied(w)
-			return
-		}
+			user, err := s.GetUserByID(claims.UserID)
+			if err != nil {
+				PermissionDenied(w)
+				return
+			}
 
-		if user.UserName != claims.Username {
-			PermissionDenied(w)
-			return
-		}
+			if user.UserName != claims.Username {
+				PermissionDenied(w)
+				return
+			}
 
-		ctx := context.WithValue(r.Context(), UserIDKey, user.ID)
+			ctx := context.WithValue(r.Context(), UserIDKey, user.ID)
 
-		h(w, r.WithContext(ctx))
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
 	}
+}
+
+func CorsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }

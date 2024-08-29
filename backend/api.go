@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/joe-ngu/gogym/handler"
@@ -9,19 +8,21 @@ import (
 )
 
 type APIServer struct {
-	listenAddr string
-	store      store.DB
+	*http.Server
+	store store.DB
 }
 
-func NewAPIServer(listenAddr string, store store.DB) *APIServer {
+func NewAPIServer(addr string, store store.DB) *APIServer {
+	router := http.NewServeMux()
 	return &APIServer{
-		listenAddr: listenAddr,
-		store:      store,
+		Server: &http.Server{Addr: addr, Handler: router},
+		store:  store,
 	}
 }
 
-func (s *APIServer) Run() {
-	router := http.NewServeMux()
+func (s *APIServer) setupRoutes() {
+	router := s.Server.Handler.(*http.ServeMux)
+	userRouter := http.NewServeMux()
 
 	exerciseHandler := handler.NewExerciseHandler(s.store)
 	workoutHandler := handler.NewWorkoutHandler(s.store)
@@ -30,27 +31,32 @@ func (s *APIServer) Run() {
 
 	// authRoutes
 	router.HandleFunc("POST /login", handler.Make(authHandler.HandleLogin))
+	router.HandleFunc("POST /signup", handler.Make(userHandler.Create))
 
 	// User Routes
-	router.HandleFunc("POST /user", handler.Make(userHandler.Create))
-	router.HandleFunc("GET /users", handler.Make(userHandler.GetAll))
-	router.HandleFunc("GET /user", handler.JWTAuthMiddleware(handler.Make(userHandler.Get), s.store))
-	router.HandleFunc("PUT /user", handler.JWTAuthMiddleware(handler.Make(userHandler.Update), s.store))
-	router.HandleFunc("DELETE /user", handler.JWTAuthMiddleware(handler.Make(userHandler.Delete), s.store))
+	userRouter.HandleFunc("GET /users", handler.Make(userHandler.GetAll))
+	userRouter.HandleFunc("GET /user", handler.Make(userHandler.Get))
+	userRouter.HandleFunc("PUT /user", handler.Make(userHandler.Update))
+	userRouter.HandleFunc("DELETE /user", handler.Make(userHandler.Delete))
 
 	// Workout Routes
-	router.HandleFunc("POST /workout", handler.Make(workoutHandler.Create))
-	router.HandleFunc("GET /workout", handler.JWTAuthMiddleware(handler.Make(workoutHandler.Get), s.store))
-	router.HandleFunc("PUT /workout", handler.JWTAuthMiddleware(handler.Make(workoutHandler.Update), s.store))
-	router.HandleFunc("DELETE /workout", handler.JWTAuthMiddleware(handler.Make(workoutHandler.Delete), s.store))
+	userRouter.HandleFunc("POST /workout", handler.Make(workoutHandler.Create))
+	userRouter.HandleFunc("GET /workout", handler.Make(workoutHandler.Get))
+	userRouter.HandleFunc("PUT /workout", handler.Make(workoutHandler.Update))
+	userRouter.HandleFunc("DELETE /workout", handler.Make(workoutHandler.Delete))
 
 	// Exercise Routes
-	router.HandleFunc("POST /exercise", handler.JWTAuthMiddleware(handler.Make(exerciseHandler.Create), s.store))
-	router.HandleFunc("GET /exercise", handler.JWTAuthMiddleware(handler.Make(exerciseHandler.Get), s.store))
-	router.HandleFunc("PUT /exercise", handler.JWTAuthMiddleware(handler.Make(exerciseHandler.Update), s.store))
-	router.HandleFunc("DELETE /exercise", handler.JWTAuthMiddleware(handler.Make(exerciseHandler.Delete), s.store))
+	userRouter.HandleFunc("POST /exercise", handler.Make(exerciseHandler.Create))
+	userRouter.HandleFunc("GET /exercise", handler.Make(exerciseHandler.Get))
+	userRouter.HandleFunc("PUT /exercise", handler.Make(exerciseHandler.Update))
+	userRouter.HandleFunc("DELETE /exercise", handler.Make(exerciseHandler.Delete))
 
-	log.Println("API server running on port: ", s.listenAddr)
+	userRouterWithMiddleware := handler.JWTAuthMiddlewareFactory(s.store)(userRouter)
+	router.Handle("/user", userRouterWithMiddleware)
+	router.Handle("/users", userRouterWithMiddleware)
+	router.Handle("/workout", userRouterWithMiddleware)
+	router.Handle("/exercise", userRouterWithMiddleware)
 
-	http.ListenAndServe(s.listenAddr, router)
+	routerWithCors := handler.CorsMiddleware(router)
+	s.Server.Handler = routerWithCors
 }

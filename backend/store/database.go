@@ -15,7 +15,7 @@ type DB interface {
 	DeleteExercise(string) error
 
 	//Workout
-	CreateWorkout(uuid.UUID, *types.Workout) error
+	CreateWorkout(uuid.UUID, *types.Workout) (uuid.UUID, error)
 	GetWorkouts(uuid.UUID) ([]*types.Workout, error)
 	GetWorkout(uuid.UUID, uuid.UUID) (*types.Workout, error)
 	UpdateWorkout(uuid.UUID, *types.Workout) (*types.Workout, error)

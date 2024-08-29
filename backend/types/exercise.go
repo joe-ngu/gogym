@@ -1,23 +1,25 @@
 package types
 
 import (
+	"encoding/json"
 	"errors"
 	"regexp"
 
 	"github.com/google/uuid"
 )
 
-// A muscle group enum using a struct for safer representation
 type MuscleGroup struct {
 	slug string
 }
 
-// Converts the value of the enum into a string
 func (m MuscleGroup) String() string {
 	return m.slug
 }
 
-// list of valid muscle group enum values
+func (m MuscleGroup) MarshalJSON() ([]byte, error) {
+	return json.Marshal(m.slug)
+}
+
 var (
 	Unknown    = MuscleGroup{""}
 	Chest      = MuscleGroup{"chest"}
@@ -31,7 +33,6 @@ var (
 	Calves     = MuscleGroup{"calves"}
 )
 
-// Assigns a string to one of the enums if valid, else throws error at unknown enum value
 func GetMuscleGroup(s string) (MuscleGroup, error) {
 	switch s {
 	case Chest.slug:
@@ -57,7 +58,6 @@ func GetMuscleGroup(s string) (MuscleGroup, error) {
 	return Unknown, errors.New("unknown muscle group: " + s)
 }
 
-// Exercise model
 type Exercise struct {
 	ID          uuid.UUID   `json:"id"`
 	Name        string      `json:"name"`

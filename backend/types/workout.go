@@ -11,7 +11,7 @@ type ExerciseDetail struct {
 	ID   uuid.UUID `json:"id"`
 	Sets int       `json:"sets"`
 	Reps int       `json:"reps"`
-	Load int       `json:"load"`
+	Load float32   `json:"load"`
 }
 
 // Workout model

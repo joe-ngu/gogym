@@ -20,7 +20,7 @@ func NewUserHandler(db store.DB) *UserHandler {
 }
 
 func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) error {
-	log.Println("Handling CREATE request - Method:", r.Method)
+	log.Println("Handling User CREATE request - Method:", r.Method)
 	var req types.UserPayload
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return InvalidJSON()
@@ -44,7 +44,7 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h *UserHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
-	log.Println("Handling GET ALL request - Method:", r.Method)
+	log.Println("Handling User GET ALL request - Method:", r.Method)
 
 	users, err := h.db.GetUsers()
 	if err != nil {
@@ -54,7 +54,7 @@ func (h *UserHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h *UserHandler) Get(w http.ResponseWriter, r *http.Request) error {
-	log.Println("Handling GET request - Method:", r.Method)
+	log.Println("Handling User GET request - Method:", r.Method)
 
 	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
 	if !ok {
@@ -72,7 +72,7 @@ func (h *UserHandler) Get(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) error {
-	log.Println("Handling UPDATE request - Method:", r.Method)
+	log.Println("Handling User UPDATE request - Method:", r.Method)
 
 	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
 	if !ok {
@@ -107,7 +107,7 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h *UserHandler) Delete(w http.ResponseWriter, r *http.Request) error {
-	log.Println("Handling DELETE request - Method:", r.Method)
+	log.Println("Handling User DELETE request - Method:", r.Method)
 
 	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
 	if !ok {

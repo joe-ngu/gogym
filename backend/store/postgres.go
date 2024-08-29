@@ -55,25 +55,47 @@ func NewPostgresStore() (*PostgresDB, error) {
 }
 
 func (s *PostgresDB) Init() error {
-	if err := s.createExerciseTables(); err != nil {
+	if err := s.createTables(); err != nil {
 		return err
 	}
-	log.Println("Created Exercise Tables")
-
-	if err := s.createWorkoutTables(); err != nil {
+	if err := s.createTableRelationships(); err != nil {
 		return err
 	}
-	log.Println("Created Workout Tables")
-
-	if err := s.createUserTables(); err != nil {
-		return err
-	}
-	log.Println("Created User Tables")
+	log.Println("Initialized Postgres Store: Done!")
 
 	return nil
 }
 
-func (s *PostgresDB) createExerciseTables() error {
+func (s *PostgresDB) createTables() error {
+	createUser := `
+		CREATE TABLE IF NOT EXISTS "user" (
+			id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+			first_name TEXT,
+			last_name TEXT,
+			user_name TEXT,
+			encrypted_password TEXT,
+			created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+		);
+	`
+	if _, err := s.db.Exec(createUser); err != nil {
+		return err
+	}
+	log.Println("Created User Table")
+
+	createWorkout := `
+  		CREATE TABLE IF NOT EXISTS workout (
+    		id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+			user_id UUID REFERENCES "user"(id),
+    		name TEXT,
+    		created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    		date TIMESTAMP 
+  		);
+	`
+	if _, err := s.db.Exec(createWorkout); err != nil {
+		return err
+	}
+	log.Println("Created Workout Table")
+
 	createExercise := `
   		CREATE TABLE IF NOT EXISTS exercise (
 			id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -84,6 +106,25 @@ func (s *PostgresDB) createExerciseTables() error {
 	if _, err := s.db.Exec(createExercise); err != nil {
 		return err
 	}
+	log.Println("Created Exercise Table")
+
+	return nil
+}
+
+func (s *PostgresDB) createTableRelationships() error {
+	createWorkoutExercise := `
+  		CREATE TABLE IF NOT EXISTS workout_exercise (
+    		workout_id UUID REFERENCES workout(id),
+    		exercise_id UUID REFERENCES exercise(id),
+    		sets INTEGER,
+    		reps INTEGER,
+    		load NUMERIC(6, 2)
+		);
+	`
+	if _, err := s.db.Exec(createWorkoutExercise); err != nil {
+		return err
+	}
+	log.Println("Created Workout Exercise Relationship Table")
 	return nil
 }
 
@@ -184,51 +225,34 @@ func (s *PostgresDB) DeleteExercise(name string) error {
 
 func loadExercises(rows *sql.Rows) (*types.Exercise, error) {
 	exercise := new(types.Exercise)
+	var muscleGroupSlug string
 	err := rows.Scan(
 		&exercise.ID,
 		&exercise.Name,
-		&exercise.MuscleGroup,
+		&muscleGroupSlug,
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	muscleGroup, err := types.GetMuscleGroup(muscleGroupSlug)
+	if err != nil {
+		return nil, err
+	}
+	exercise.MuscleGroup = muscleGroup
+
 	return exercise, err
 }
 
-func (s *PostgresDB) createWorkoutTables() error {
-	createWorkout := `
-  		CREATE TABLE IF NOT EXISTS workout (
-    		id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-			user_id UUID REFERENCES "user"(id),
-    		name TEXT,
-    		created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    		date TIMESTAMP 
-  		);
-	`
-	createWorkoutExercise := `
-  		CREATE TABLE IF NOT EXISTS workout_exercise (
-    		workout_id UUID REFERENCES workout(id),
-    		exercise_id UUID REFERENCES exercise(id),
-    		sets INTEGER,
-    		reps INTEGER,
-    		load NUMERIC(6, 2)
-		);
-	`
-
-	if _, err := s.db.Exec(createWorkout); err != nil {
-		return err
-	}
-	if _, err := s.db.Exec(createWorkoutExercise); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *PostgresDB) CreateWorkout(userID uuid.UUID, workout *types.Workout) error {
+func (s *PostgresDB) CreateWorkout(userID uuid.UUID, workout *types.Workout) (uuid.UUID, error) {
 	createWorkout := `
     	INSERT INTO workout (
 			user_id,
 			name, 
 			date
 		)
-    	VALUES ($1, $2, $3);
+    	VALUES ($1, $2, $3)
+		RETURNING id;
   	`
 
 	addWorkoutExercises := `
@@ -246,7 +270,7 @@ func (s *PostgresDB) CreateWorkout(userID uuid.UUID, workout *types.Workout) err
 	for i, exercise := range workout.Exercises {
 		placeholders = append(placeholders, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)",
 			(i*5)+1,  // Workout ID
-			(i*5)+2,  // Exercise Name
+			(i*5)+2,  // Exercise ID
 			(i*5)+3,  // Sets
 			(i*5)+4,  // Reps
 			(i*5)+5)) // Load
@@ -256,29 +280,33 @@ func (s *PostgresDB) CreateWorkout(userID uuid.UUID, workout *types.Workout) err
 
 	tx, err := s.db.Begin()
 	if err != nil {
-		return err
+		return uuid.UUID{}, err
 	}
 
-	if _, err := tx.Exec(
+	var workoutID uuid.UUID
+	if err := tx.QueryRow(
 		createWorkout,
+		userID,
 		workout.Name,
 		workout.Date,
-	); err != nil {
+	).Scan(&workoutID); err != nil {
 		tx.Rollback()
-		return err
+		return uuid.UUID{}, err
 	}
 
-	if _, err := tx.Exec(addWorkoutExercises, workoutExercises...); err != nil {
-		tx.Rollback()
-		return err
+	if (workout.Exercises != nil) && (len(workout.Exercises) != 0) {
+		if _, err := tx.Exec(addWorkoutExercises, workoutExercises...); err != nil {
+			tx.Rollback()
+			return uuid.UUID{}, err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
 		tx.Rollback()
-		return err
+		return uuid.UUID{}, err
 	}
 
-	return nil
+	return workoutID, nil
 }
 
 func (s *PostgresDB) GetWorkouts(userID uuid.UUID) ([]*types.Workout, error) {
@@ -287,20 +315,24 @@ func (s *PostgresDB) GetWorkouts(userID uuid.UUID) ([]*types.Workout, error) {
 		WHERE user_id = $1;
   	`
 
-	rows, err := s.db.Query(getWorkouts, userID)
+	workoutRows, err := s.db.Query(getWorkouts, userID)
 	if err != nil {
 		return nil, err
 	}
+	defer workoutRows.Close()
 
 	workouts := []*types.Workout{}
-	for rows.Next() {
-		workout, err := loadWorkouts(rows)
+	for workoutRows.Next() {
+		workout, err := loadWorkouts(workoutRows)
 		if err != nil {
+			return nil, err
+		}
+		if err := s.getWorkoutExercises(workout); err != nil {
 			return nil, err
 		}
 		workouts = append(workouts, workout)
 	}
-	if err := rows.Err(); err != nil {
+	if err := workoutRows.Err(); err != nil {
 		return nil, err
 	}
 
@@ -312,16 +344,30 @@ func (s *PostgresDB) GetWorkout(userID uuid.UUID, id uuid.UUID) (*types.Workout,
     	SELECT * FROM workout
     	WHERE user_id = $1 AND ID = $2;
   	`
-	rows, err := s.db.Query(getWorkout, userID, id)
+	workoutRow, err := s.db.Query(getWorkout, userID, id)
+	if err != nil {
+		return nil, err
+	}
+	defer workoutRow.Close()
+
+	if !workoutRow.Next() {
+		return nil, fmt.Errorf("workout %v not found", id)
+	}
+
+	workout, err := loadWorkouts(workoutRow)
 	if err != nil {
 		return nil, err
 	}
 
-	for rows.Next() {
-		return loadWorkouts(rows)
+	if err := s.getWorkoutExercises(workout); err != nil {
+		return nil, err
 	}
 
-	return nil, fmt.Errorf("workout %v not found", id)
+	if workoutRow.Next() {
+		return nil, fmt.Errorf("multiple workouts found with id %d", id)
+	}
+
+	return workout, nil
 }
 
 func (s *PostgresDB) UpdateWorkout(userID uuid.UUID, workout *types.Workout) (*types.Workout, error) {
@@ -329,18 +375,16 @@ func (s *PostgresDB) UpdateWorkout(userID uuid.UUID, workout *types.Workout) (*t
     	UPDATE workout
     	SET 
 			name = $1, 
-			created_at = $2, 
-    	WHERE
-			user_id = $3 AND
-			id = $4;
+			created_at = $2 
+    	WHERE user_id = $3 AND id = $4;
 	`
 
 	deleteOldExercises := `
     	DELETE FROM workout_exercise
-    	WHERE user_id = $1 AND workout_id = $2;
+    	WHERE workout_id = $1;
 	`
 
-	addNewExercises := `
+	addNewWorkoutExercises := `
     	INSERT INTO workout_exercise (
 			workout_id, 
 			exercise_id,
@@ -348,7 +392,7 @@ func (s *PostgresDB) UpdateWorkout(userID uuid.UUID, workout *types.Workout) (*t
 			reps,
 			load
 		)
-    	VALUES , 
+    	VALUES 
   	`
 
 	var placeholders []string
@@ -356,13 +400,13 @@ func (s *PostgresDB) UpdateWorkout(userID uuid.UUID, workout *types.Workout) (*t
 	for i, exercise := range workout.Exercises {
 		placeholders = append(placeholders, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)",
 			(i*5)+1,  // Workout ID
-			(i*5)+2,  // Exercise Name
+			(i*5)+2,  // Exercise ID
 			(i*5)+3,  // Sets
 			(i*5)+4,  // Reps
 			(i*5)+5)) // Load
 		workoutExercises = append(workoutExercises, workout.ID, exercise.ID, exercise.Sets, exercise.Reps, exercise.Load)
 	}
-	addNewExercises = strings.Join(placeholders, ",") + ";"
+	addNewWorkoutExercises += strings.Join(placeholders, ",") + ";"
 
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -373,18 +417,19 @@ func (s *PostgresDB) UpdateWorkout(userID uuid.UUID, workout *types.Workout) (*t
 		updateWorkout,
 		workout.Name,
 		workout.CreatedAt,
+		userID,
 		workout.ID,
 	); err != nil {
 		tx.Rollback()
 		return nil, err
 	}
 
-	if _, err := tx.Exec(deleteOldExercises, userID, workout.ID); err != nil {
+	if _, err := tx.Exec(deleteOldExercises, workout.ID); err != nil {
 		tx.Rollback()
 		return nil, err
 	}
 
-	if _, err := tx.Exec(addNewExercises, workoutExercises...); err != nil {
+	if _, err := tx.Exec(addNewWorkoutExercises, workoutExercises...); err != nil {
 		tx.Rollback()
 		return nil, err
 	}
@@ -430,42 +475,53 @@ func (s *PostgresDB) DeleteWorkout(userID uuid.UUID, id uuid.UUID) error {
 	return nil
 }
 
+func (s *PostgresDB) getWorkoutExercises(workout *types.Workout) error {
+	getWorkoutExercises := `
+		SELECT exercise_id, sets, reps, load
+		FROM workout_exercise
+		WHERE workout_id = $1;
+	`
+	workoutExerciseRows, err := s.db.Query(getWorkoutExercises, workout.ID)
+	if err != nil {
+		return err
+	}
+	defer workoutExerciseRows.Close()
+
+	for workoutExerciseRows.Next() {
+		workoutExercise, err := loadWorkoutExercises(workoutExerciseRows)
+		if err != nil {
+			return err
+		}
+		workout.Exercises = append(workout.Exercises, *workoutExercise)
+	}
+
+	if err := workoutExerciseRows.Err(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func loadWorkouts(rows *sql.Rows) (*types.Workout, error) {
 	workout := new(types.Workout)
 	err := rows.Scan(
 		&workout.ID,
+		&workout.UserID,
 		&workout.Name,
-		&workout.Exercises,
+		&workout.Date,
 		&workout.CreatedAt,
 	)
 	return workout, err
 }
 
-func (s *PostgresDB) createUserTables() error {
-	createUser := `
-		CREATE TABLE IF NOT EXISTS "user" (
-			id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-			first_name TEXT,
-			last_name TEXT,
-			user_name TEXT,
-			encrypted_password TEXT,
-			created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-		);
-	`
-	createUserWorkout := `
-  		CREATE TABLE IF NOT EXISTS user_workout (
-   			user_id UUID REFERENCES "user"(id),
-    		workout_id UUID REFERENCES workout(id)
-  		);
-	`
-
-	if _, err := s.db.Exec(createUser); err != nil {
-		return err
-	}
-	if _, err := s.db.Exec(createUserWorkout); err != nil {
-		return err
-	}
-	return nil
+func loadWorkoutExercises(rows *sql.Rows) (*types.ExerciseDetail, error) {
+	workoutExercise := new(types.ExerciseDetail)
+	err := rows.Scan(
+		&workoutExercise.ID,
+		&workoutExercise.Sets,
+		&workoutExercise.Reps,
+		&workoutExercise.Load,
+	)
+	return workoutExercise, err
 }
 
 func (s *PostgresDB) CreateUser(user *types.User) error {

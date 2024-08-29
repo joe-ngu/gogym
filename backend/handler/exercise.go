@@ -19,7 +19,7 @@ func NewExerciseHandler(db store.DB) *ExerciseHandler {
 }
 
 func (h *ExerciseHandler) Create(w http.ResponseWriter, r *http.Request) error {
-	log.Println("Handling CREATE request - Method:", r.Method)
+	log.Println("Handling Exercise CREATE request - Method:", r.Method)
 
 	var req types.ExercisePayload
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -49,7 +49,7 @@ func (h *ExerciseHandler) Create(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h *ExerciseHandler) Get(w http.ResponseWriter, r *http.Request) error {
-	log.Println("Handling READ request - Method:", r.Method)
+	log.Println("Handling Exercise READ request - Method:", r.Method)
 
 	name := r.URL.Query().Get("name")
 	if name == "" {
@@ -68,7 +68,7 @@ func (h *ExerciseHandler) Get(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h *ExerciseHandler) Update(w http.ResponseWriter, r *http.Request) error {
-	log.Println("Handling UPDATE request - Method:", r.Method)
+	log.Println("Handling Exercise UPDATE request - Method:", r.Method)
 	var req types.ExercisePayload
 
 	name := r.URL.Query().Get("name")
@@ -104,7 +104,7 @@ func (h *ExerciseHandler) Update(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h *ExerciseHandler) Delete(w http.ResponseWriter, r *http.Request) error {
-	log.Println("Handling DELETE request - Method:", r.Method)
+	log.Println("Handling Exercise DELETE request - Method:", r.Method)
 
 	name := r.URL.Query().Get("name")
 	if name == "" {

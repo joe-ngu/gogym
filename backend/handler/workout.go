@@ -21,7 +21,7 @@ func NewWorkoutHandler(db store.DB) *WorkoutHandler {
 }
 
 func (h *WorkoutHandler) Create(w http.ResponseWriter, r *http.Request) error {
-	log.Println("Handling CREATE request - Method:", r.Method)
+	log.Println("Handling Workout CREATE request - Method:", r.Method)
 
 	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
 	if !ok {
@@ -43,14 +43,21 @@ func (h *WorkoutHandler) Create(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	if err := h.db.CreateWorkout(userID, workout); err != nil {
+	workoutID, err := h.db.CreateWorkout(userID, workout)
+	if err != nil {
 		return err
 	}
+
+	workout, err = h.db.GetWorkout(userID, workoutID)
+	if err != nil {
+		return err
+	}
+
 	return writeJSON(w, http.StatusCreated, workout)
 }
 
 func (h *WorkoutHandler) Get(w http.ResponseWriter, r *http.Request) error {
-	log.Println("Handling GET request - Method:", r.Method)
+	log.Println("Handling Workout GET request - Method:", r.Method)
 
 	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
 	if !ok {
@@ -81,7 +88,7 @@ func (h *WorkoutHandler) Get(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h *WorkoutHandler) Update(w http.ResponseWriter, r *http.Request) error {
-	log.Println("Handling UPDATE request - Method:", r.Method)
+	log.Println("Handling Workout UPDATE request - Method:", r.Method)
 
 	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
 	if !ok {
@@ -117,6 +124,7 @@ func (h *WorkoutHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
+	workout.ID = exists.ID
 
 	updatedWorkout, err := h.db.UpdateWorkout(userID, workout)
 	if err != nil {
@@ -127,7 +135,7 @@ func (h *WorkoutHandler) Update(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h *WorkoutHandler) Delete(w http.ResponseWriter, r *http.Request) error {
-	log.Println("Handling DELETE request - Method:", r.Method)
+	log.Println("Handling Workout DELETE request - Method:", r.Method)
 
 	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
 	if !ok {
