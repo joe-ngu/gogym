@@ -105,8 +105,8 @@ func (h *WorkoutHandler) Update(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	exists, _ := h.db.GetWorkout(userID, workoutID)
-	if exists == nil {
+	existingWorkout, _ := h.db.GetWorkout(userID, workoutID)
+	if existingWorkout == nil {
 		return errors.New("workout to update does not exist")
 	}
 
@@ -124,7 +124,7 @@ func (h *WorkoutHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	workout.ID = exists.ID
+	workout.ID = existingWorkout.ID
 
 	updatedWorkout, err := h.db.UpdateWorkout(userID, workout)
 	if err != nil {

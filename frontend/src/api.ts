@@ -4,6 +4,7 @@ import {
   ExercisePayload,
   User,
   Workout,
+  WorkoutDetail,
   WorkoutPayload,
 } from "./types";
 
@@ -12,7 +13,6 @@ export const BASE_URL = "http://localhost:8000";
 type ApiResponse<T> = {
   data: T;
   status: number;
-  headers: Headers;
 };
 
 /* USERS */
@@ -44,24 +44,6 @@ export const fetchUser = async (
   });
   if (!response.ok) {
     throw new Error("Failed to fetch user");
-  }
-  return response.json();
-};
-
-export const createUser = async (
-  token: AuthToken,
-  user: User,
-): Promise<ApiResponse<User>> => {
-  const response = await fetch(`${BASE_URL}/user`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(user),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to create user");
   }
   return response.json();
 };
@@ -121,7 +103,7 @@ export const fetchWorkouts = async (
 export const fetchWorkout = async (
   token: AuthToken,
   id: string,
-): Promise<ApiResponse<Workout>> => {
+): Promise<ApiResponse<WorkoutDetail>> => {
   const response = await fetch(`${BASE_URL}/workout?id=${id}`, {
     method: "GET",
     headers: {
@@ -138,7 +120,7 @@ export const fetchWorkout = async (
 export const createWorkout = async (
   token: AuthToken,
   workout: WorkoutPayload,
-): Promise<ApiResponse<Workout>> => {
+): Promise<ApiResponse<WorkoutDetail>> => {
   const response = await fetch(`${BASE_URL}/workout`, {
     method: "POST",
     headers: {
@@ -157,7 +139,7 @@ export const updateWorkout = async (
   token: AuthToken,
   id: string,
   workout: WorkoutPayload,
-): Promise<ApiResponse<Workout>> => {
+): Promise<ApiResponse<WorkoutDetail>> => {
   const response = await fetch(`${BASE_URL}/workout?id=${id}`, {
     method: "PUT",
     headers: {
@@ -176,7 +158,7 @@ export const deleteWorkout = async (
   token: AuthToken,
   id: string,
 ): Promise<ApiResponse<null>> => {
-  const response = await fetch(`${BASE_URL}/workouts/${id}`, {
+  const response = await fetch(`${BASE_URL}/workout/${id}`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -193,7 +175,7 @@ export const deleteWorkout = async (
 export const fetchExercises = async (
   token: AuthToken,
 ): Promise<ApiResponse<Exercise[]>> => {
-  const response = await fetch(`${BASE_URL}/exercises`, {
+  const response = await fetch(`${BASE_URL}/exercise`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",

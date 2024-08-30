@@ -13,10 +13,10 @@ interface AuthContextProps {
   signup: (
     firstName: string,
     lastName: string,
-    userName: string,
+    username: string,
     password: string,
   ) => Promise<void>;
-  login: (userName: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -39,10 +39,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signup = async (
     firstName: string,
     lastName: string,
-    userName: string,
+    username: string,
     password: string,
   ) => {
-    const response = await fetch(`${BASE_URL}/user`, {
+    const response = await fetch(`${BASE_URL}/signup`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -50,30 +50,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       body: JSON.stringify({
         first_name: firstName,
         last_name: lastName,
-        user_name: userName,
+        user_name: username,
         password: password,
       }),
     });
     if (response.ok) {
-      const data = await response.json();
-      setToken(data.token);
-      console.log("Signup successful:", data);
+      const jsonResponse = await response.json();
+      setToken(jsonResponse.data.token);
+      console.log("Signup successful");
     } else {
       throw new Error("Failed to signup");
     }
   };
 
-  const login = async (userName: string, password: string) => {
+  const login = async (username: string, password: string) => {
     const response = await fetch(`${BASE_URL}/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ user_name: userName, password }),
+      body: JSON.stringify({ user_name: username, password }),
     });
     if (response.ok) {
-      const data = await response.json();
-      setToken(data.token);
+      const jsonResponse = await response.json();
+      setToken(jsonResponse.data.token);
+      console.log("Login successful");
     } else {
       throw new Error("Failed to login");
     }

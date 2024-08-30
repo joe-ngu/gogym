@@ -19,7 +19,7 @@ const Exercises = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newExercise = { name, muscleGroup };
+    const newExercise = { name, muscle_group: muscleGroup };
     const response = await createExercise(token, newExercise);
     if (response.status === 201) {
       console.log("Exercise created successfully");
@@ -33,16 +33,16 @@ const Exercises = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Exercise Library</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-col-3">
+      <h1 className="mb-6 text-3xl font-bold">Exercise Library</h1>
+      <div className="lg:grid-col-3 grid gap-4 md:grid-cols-2">
         {exercises.map((exercise) => (
           <div
             key={exercise.id}
-            className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+            className="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg"
           >
-            <h2 className="text-xl font-semibold mb-2">{exercise.name}</h2>
+            <h2 className="mb-2 text-xl font-semibold">{exercise.name}</h2>
             <p className="text-gray-600">
-              Muscle Group: {exercise.muscleGroup}
+              Muscle Group: {exercise.muscle_group}
             </p>
           </div>
         ))}
@@ -78,7 +78,7 @@ const Exercises = () => {
         </div>
         <button
           type="submit"
-          className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         >
           Create Exercise
         </button>

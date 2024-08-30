@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Exercise, Workout, WorkoutExercise } from "@/types";
+import { Exercise, WorkoutDetail, WorkoutExercise } from "@/types";
 import { fetchWorkout, updateWorkout, fetchExercises } from "@/api";
 import { useAuth } from "@/auth/AuthContext";
 import ExerciseRow from "@/components/ExerciseRow";
@@ -8,11 +8,11 @@ import ExerciseRow from "@/components/ExerciseRow";
 const WorkoutDetails = () => {
   const { token } = useAuth();
   const { id } = useParams<{ id: string }>();
-  const [workout, setWorkout] = useState<Workout | null>(null);
+  const [workout, setWorkout] = useState<WorkoutDetail | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [workoutName, setWorkoutName] = useState<string>(workout?.name || "");
   const [newExercise, setNewExercise] = useState<WorkoutExercise>({
-    name: "",
+    id: "",
     sets: 0,
     reps: 0,
     load: 0,
@@ -49,6 +49,7 @@ const WorkoutDetails = () => {
     const loadWorkoutData = async () => {
       if (id) {
         const response = await fetchWorkout(token, id);
+        console.log(response);
         setWorkout(response.data);
       }
       const response = await fetchExercises(token);
@@ -61,13 +62,13 @@ const WorkoutDetails = () => {
     if (workout) {
       const updatedExercises = [...workout.exercises, newExercise];
       setWorkout({ ...workout, exercises: updatedExercises });
-      setNewExercise({ name: "", sets: 0, reps: 0, load: 0 });
+      setNewExercise({ id: "", sets: 0, reps: 0, load: 0 });
     }
   };
 
   const handleUpdateExercise = (
     editedExercise: WorkoutExercise,
-    index: number
+    index: number,
   ) => {
     if (workout) {
       const updatedExercises = [...workout.exercises];
@@ -90,9 +91,16 @@ const WorkoutDetails = () => {
     }
   };
 
+  const getExerciseName = (id: string) => {
+    const exercise = exercises.find((exercise) => exercise.id === id);
+    if (exercise) {
+      return exercise.name;
+    }
+  };
+
   return (
     <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
+      <div className="mb-6 flex items-center justify-between">
         {isEditingName ? (
           <input
             type="text"
@@ -101,10 +109,10 @@ const WorkoutDetails = () => {
             onKeyDown={handleNameKeyDown}
             onBlur={handleNameSave}
             autoFocus
-            className="border-b-2 border-gray-300 focus:border-blue-500 outline-none text-3xl font-bold"
+            className="border-b-2 border-gray-300 text-3xl font-bold outline-none focus:border-blue-500"
           />
         ) : (
-          <h1 className="text-3xl font-bold flex items-center cursor-pointer">
+          <h1 className="flex cursor-pointer items-center text-3xl font-bold">
             {workout?.name}{" "}
             <span
               className="ml-2 text-gray-500 hover:text-blue-500"
@@ -117,14 +125,14 @@ const WorkoutDetails = () => {
         )}
       </div>
       <h2>Workout Details</h2>
-      <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
+      <table className="min-w-full overflow-hidden rounded-lg bg-white shadow-md">
         <thead>
-          <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
-            <th className="py-3 px-6 text-left">Exercise</th>
-            <th className="py-3 px-6 text-left">Sets</th>
-            <th className="py-3 px-6 text-left">Reps</th>
-            <th className="py-3 px-6 text-left">Weight</th>
-            <th className="py-3 px-6 text-left">Actions</th>
+          <tr className="bg-gray-200 text-sm uppercase leading-normal text-gray-600">
+            <th className="px-6 py-3 text-left">Exercise</th>
+            <th className="px-6 py-3 text-left">Sets</th>
+            <th className="px-6 py-3 text-left">Reps</th>
+            <th className="px-6 py-3 text-left">Weight</th>
+            <th className="px-6 py-3 text-left">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -132,19 +140,20 @@ const WorkoutDetails = () => {
             (exercise: WorkoutExercise, index: number) => (
               <ExerciseRow
                 key={index}
+                index={index}
                 exercise={exercise}
                 exercises={exercises}
                 onUpdate={handleUpdateExercise}
                 onRemove={handleRemoveExercise}
               />
-            )
+            ),
           )}
           <tr>
             <td>
               <select
-                value={newExercise.name}
+                value={newExercise.id}
                 onChange={(e) =>
-                  setNewExercise({ ...newExercise, name: e.target.value })
+                  setNewExercise({ ...newExercise, id: e.target.value })
                 }
                 required
               >
@@ -152,8 +161,8 @@ const WorkoutDetails = () => {
                   Select an exercise
                 </option>
                 {exercises?.map((exercise) => (
-                  <option key={exercise.id} value={exercise.name}>
-                    {exercise.name}
+                  <option key={exercise.id} value={exercise.id}>
+                    {getExerciseName(exercise.id)}
                   </option>
                 ))}
               </select>

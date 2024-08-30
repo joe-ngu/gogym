@@ -2,30 +2,31 @@ export type AuthToken = string | null;
 
 export interface User {
   id: string;
-  name: string;
-  email: string;
-  password?: string;
+  first_name: string;
+  last_name: string;
+  user_name: string;
 }
 
 export interface UserPayload {
-  name: string;
-  email: string;
+  first_name: string;
+  last_name: string;
+  user_name: string;
   password: string;
 }
 
 export interface Exercise {
   id: string;
   name: string;
-  muscleGroup: string;
+  muscle_group: string;
 }
 
 export interface ExercisePayload {
   name: string;
-  muscleGroup: string;
+  muscle_group: string;
 }
 
 export interface WorkoutExercise {
-  name: string;
+  id: string;
   sets: number;
   reps: number;
   load: number;
@@ -33,9 +34,14 @@ export interface WorkoutExercise {
 
 export interface Workout {
   id: string;
+  user_id: string;
   name: string;
+  date: string;
+  created_at: string;
+}
+
+export interface WorkoutDetail extends Workout {
   exercises: WorkoutExercise[];
-  userId: string;
 }
 
 export interface WorkoutPayload {

@@ -2,7 +2,7 @@ import { Exercise, WorkoutExercise } from "@/types";
 import { useEffect, useState } from "react";
 
 interface ExerciseRowProps {
-  key: number;
+  index: number;
   exercise: WorkoutExercise;
   exercises: Exercise[];
   onUpdate: (editedExercise: WorkoutExercise, index: number) => void;
@@ -10,7 +10,7 @@ interface ExerciseRowProps {
 }
 
 const ExerciseRow = ({
-  key,
+  index,
   exercise,
   exercises,
   onUpdate,
@@ -20,7 +20,7 @@ const ExerciseRow = ({
   const [editedExercise, setEditedExercise] = useState(exercise);
 
   useEffect(() => {
-    onUpdate(editedExercise, key);
+    onUpdate(editedExercise, index);
   }, [editedExercise]);
 
   const handleEdit = () => {
@@ -28,18 +28,25 @@ const ExerciseRow = ({
   };
 
   const handleRemove = () => {
-    onRemove(key);
+    onRemove(index);
+  };
+
+  const getExerciseName = (id: string) => {
+    const exercise = exercises.find((exercise) => exercise.id === id);
+    if (exercise) {
+      return exercise.name;
+    }
   };
 
   return (
-    <tr key={key} className="border-b border-gray-200">
+    <tr key={index} className="border-b border-gray-200">
       {isEditing ? (
         <>
-          <td className="py-3 px-6 text-left">
+          <td className="px-6 py-3 text-left">
             <select
-              value={exercise.name}
+              value={exercise.id}
               onChange={(e) =>
-                setEditedExercise({ ...editedExercise, name: e.target.value })
+                setEditedExercise({ ...editedExercise, id: e.target.value })
               }
               required
             >
@@ -47,41 +54,41 @@ const ExerciseRow = ({
                 Select an exercise
               </option>
               {exercises?.map((exercise) => (
-                <option key={exercise.id} value={exercise.name}>
-                  {exercise.name}
+                <option key={exercise.id} value={exercise.id}>
+                  {getExerciseName(exercise.id)}
                 </option>
               ))}
             </select>
           </td>
 
-          <td className="py-3 px-6 text-left">
+          <td className="px-6 py-3 text-left">
             <input
               type="number"
               value={editedExercise.sets}
               onChange={(e) =>
                 setEditedExercise({ ...editedExercise, sets: +e.target.value })
               }
-              className="border rounded px-2 py-1"
+              className="rounded border px-2 py-1"
             />
           </td>
-          <td className="py-3 px-6 text-left">
+          <td className="px-6 py-3 text-left">
             <input
               type="number"
               value={editedExercise.reps}
               onChange={(e) =>
                 setEditedExercise({ ...editedExercise, reps: +e.target.value })
               }
-              className="border rounded px-2 py-1"
+              className="rounded border px-2 py-1"
             />
           </td>
-          <td className="py-3 px-6 text-left">
+          <td className="px-6 py-3 text-left">
             <input
               type="number"
               value={editedExercise.load}
               onChange={(e) =>
                 setEditedExercise({ ...editedExercise, load: +e.target.value })
               }
-              className="border rounded px-2 py-1"
+              className="rounded border px-2 py-1"
             />
           </td>
           <td>
@@ -95,6 +102,7 @@ const ExerciseRow = ({
         </>
       ) : (
         <>
+          <td>{getExerciseName(exercise.id)}</td>
           <td>{editedExercise.sets}</td>
           <td>{editedExercise.reps}</td>
           <td>{editedExercise.load}</td>
@@ -106,7 +114,7 @@ const ExerciseRow = ({
               ✏️ Edit
             </button>
             <button
-              className="text-red-500 hover:text-red-700 ml-4"
+              className="ml-4 text-red-500 hover:text-red-700"
               onClick={handleRemove}
             >
               🗑️ Remove

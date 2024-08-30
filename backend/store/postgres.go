@@ -88,7 +88,7 @@ func (s *PostgresDB) createTables() error {
 			user_id UUID REFERENCES "user"(id),
     		name TEXT,
     		created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    		date TIMESTAMP 
+    		date TIMESTAMPTZ 
   		);
 	`
 	if _, err := s.db.Exec(createWorkout); err != nil {
@@ -134,7 +134,8 @@ func (s *PostgresDB) CreateExercise(exercise *types.Exercise) error {
 			name, 
 			muscle_group
 		) 
-    	VALUES ($1, $2);
+    	VALUES ($1, $2)
+		RETURNING id;
 	`
 
 	exists, _ := s.GetExercise(exercise.Name)
@@ -142,11 +143,11 @@ func (s *PostgresDB) CreateExercise(exercise *types.Exercise) error {
 		return errors.New("exercise with same name already exists")
 	}
 
-	if _, err := s.db.Exec(
+	if err := s.db.QueryRow(
 		createExercise,
 		exercise.Name,
 		exercise.MuscleGroup.String(),
-	); err != nil {
+	).Scan(&exercise.ID); err != nil {
 		return err
 	}
 	return nil
@@ -265,6 +266,21 @@ func (s *PostgresDB) CreateWorkout(userID uuid.UUID, workout *types.Workout) (uu
 		)
     	VALUES  
   	`
+	tx, err := s.db.Begin()
+	if err != nil {
+		return uuid.UUID{}, err
+	}
+
+	if err := tx.QueryRow(
+		createWorkout,
+		userID,
+		workout.Name,
+		workout.Date,
+	).Scan(&workout.ID); err != nil {
+		tx.Rollback()
+		return uuid.UUID{}, err
+	}
+
 	var placeholders []string
 	var workoutExercises []interface{}
 	for i, exercise := range workout.Exercises {
@@ -278,22 +294,6 @@ func (s *PostgresDB) CreateWorkout(userID uuid.UUID, workout *types.Workout) (uu
 	}
 	addWorkoutExercises += strings.Join(placeholders, ",") + ";"
 
-	tx, err := s.db.Begin()
-	if err != nil {
-		return uuid.UUID{}, err
-	}
-
-	var workoutID uuid.UUID
-	if err := tx.QueryRow(
-		createWorkout,
-		userID,
-		workout.Name,
-		workout.Date,
-	).Scan(&workoutID); err != nil {
-		tx.Rollback()
-		return uuid.UUID{}, err
-	}
-
 	if (workout.Exercises != nil) && (len(workout.Exercises) != 0) {
 		if _, err := tx.Exec(addWorkoutExercises, workoutExercises...); err != nil {
 			tx.Rollback()
@@ -306,7 +306,7 @@ func (s *PostgresDB) CreateWorkout(userID uuid.UUID, workout *types.Workout) (uu
 		return uuid.UUID{}, err
 	}
 
-	return workoutID, nil
+	return workout.ID, nil
 }
 
 func (s *PostgresDB) GetWorkouts(userID uuid.UUID) ([]*types.Workout, error) {
@@ -325,9 +325,6 @@ func (s *PostgresDB) GetWorkouts(userID uuid.UUID) ([]*types.Workout, error) {
 	for workoutRows.Next() {
 		workout, err := loadWorkouts(workoutRows)
 		if err != nil {
-			return nil, err
-		}
-		if err := s.getWorkoutExercises(workout); err != nil {
 			return nil, err
 		}
 		workouts = append(workouts, workout)
@@ -375,7 +372,7 @@ func (s *PostgresDB) UpdateWorkout(userID uuid.UUID, workout *types.Workout) (*t
     	UPDATE workout
     	SET 
 			name = $1, 
-			created_at = $2 
+			date = $2 
     	WHERE user_id = $3 AND id = $4;
 	`
 
@@ -416,7 +413,7 @@ func (s *PostgresDB) UpdateWorkout(userID uuid.UUID, workout *types.Workout) (*t
 	if _, err := tx.Exec(
 		updateWorkout,
 		workout.Name,
-		workout.CreatedAt,
+		workout.Date,
 		userID,
 		workout.ID,
 	); err != nil {
@@ -507,8 +504,8 @@ func loadWorkouts(rows *sql.Rows) (*types.Workout, error) {
 		&workout.ID,
 		&workout.UserID,
 		&workout.Name,
-		&workout.Date,
 		&workout.CreatedAt,
+		&workout.Date,
 	)
 	return workout, err
 }

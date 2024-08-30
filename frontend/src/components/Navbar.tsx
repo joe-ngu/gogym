@@ -17,7 +17,7 @@ const Navbar = () => {
   return (
     <nav>
       <h1
-        className="text-3xl p-4 flex justify-center items-center cursor-pointer"
+        className="flex cursor-pointer items-center justify-center p-4 text-3xl"
         onClick={handleLogoClick}
       >
         Workout Tracker

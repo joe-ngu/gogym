@@ -7,6 +7,11 @@ import (
 	"net/http"
 )
 
+type Response struct {
+	Status int `json:"status"`
+	Data   any `json:"data"`
+}
+
 type APIError struct {
 	StatusCode int `json:"status_code"`
 	Msg        any `json:"msg"`
@@ -65,8 +70,12 @@ func Make(h APIFunc) http.HandlerFunc {
 	}
 }
 
-func writeJSON(w http.ResponseWriter, status int, v any) error {
-	w.WriteHeader(status)
+func writeJSON(w http.ResponseWriter, status int, data any) error {
+	response := Response{
+		Status: status,
+		Data:   data,
+	}
 	w.Header().Set("Content-Type", "application/json")
-	return json.NewEncoder(w).Encode(v)
+	w.WriteHeader(status)
+	return json.NewEncoder(w).Encode(response)
 }

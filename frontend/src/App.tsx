@@ -13,6 +13,7 @@ import Home from "@/pages/Home";
 import Users from "@/pages/Users";
 import Workouts from "@/pages/Workouts";
 import Exercises from "@/pages/Exercises";
+import WorkoutDetails from "./pages/WorkoutDetail";
 
 const ProtectedRoute = ({ element }: { element: React.ReactNode }) => {
   const { isAuthenticated } = useAuth();
@@ -36,6 +37,10 @@ function App() {
             <Route
               path="/workouts"
               element={<ProtectedRoute element={<Workouts />} />}
+            />
+            <Route
+              path="/workouts/detail/:id"
+              element={<ProtectedRoute element={<WorkoutDetails />} />}
             />
             <Route
               path="/exercises"
