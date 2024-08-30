@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Workout } from "@/types";
 import { fetchWorkouts, createWorkout } from "@/api";
 import { useAuth } from "@/auth/AuthContext";
-import { format, parseISO } from "date-fns";
 
 const Workouts = () => {
   // TO-DO: Filtering feature (maybe by name?)
