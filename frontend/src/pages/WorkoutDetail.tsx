@@ -60,7 +60,9 @@ const WorkoutDetails = () => {
 
   const handleAddExercise = () => {
     if (workout) {
-      const updatedExercises = [...workout.exercises, newExercise];
+      const updatedExercises = workout.exercises
+        ? [...workout.exercises, newExercise]
+        : [newExercise];
       setWorkout({ ...workout, exercises: updatedExercises });
       setNewExercise({ id: "", sets: 0, reps: 0, load: 0 });
     }
@@ -136,18 +138,20 @@ const WorkoutDetails = () => {
           </tr>
         </thead>
         <tbody>
-          {workout?.exercises.map(
-            (exercise: WorkoutExercise, index: number) => (
-              <ExerciseRow
-                key={index}
-                index={index}
-                exercise={exercise}
-                exercises={exercises}
-                onUpdate={handleUpdateExercise}
-                onRemove={handleRemoveExercise}
-              />
-            ),
-          )}
+          {workout && workout.exercises
+            ? workout.exercises.map(
+                (exercise: WorkoutExercise, index: number) => (
+                  <ExerciseRow
+                    key={index}
+                    index={index}
+                    exercise={exercise}
+                    exercises={exercises}
+                    onUpdate={handleUpdateExercise}
+                    onRemove={handleRemoveExercise}
+                  />
+                ),
+              )
+            : null}
           <tr>
             <td>
               <select
