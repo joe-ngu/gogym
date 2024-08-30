@@ -67,7 +67,7 @@ $ git clone https://github.com/joe-ngu/gogym.git
 $ cd gogym
 
 # Run the quickstart script
-$ ./quickstart
+$ make quickstart
 
 ```
 
