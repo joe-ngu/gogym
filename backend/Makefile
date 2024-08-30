@@ -6,7 +6,7 @@ build:
 	docker build --no-cache -t $(IMAGE_NAME) .
 
 up:
-	$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) up --build
+	$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) up --build -d
 
 down:
 	$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) down
